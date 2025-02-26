@@ -78,8 +78,7 @@ public:
             if (!visited[current]) {
                 cout << current << " ";
                 visited[current] = true;
-
-                // Push all unvisited neighbors onto the stack
+                
                 for (auto it = adjacentList[current].rbegin(); it != adjacentList[current].rend(); ++it) {
                     if (!visited[*it]) {
                         stack.push(*it);
