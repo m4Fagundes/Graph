@@ -4,6 +4,8 @@
 #include <queue>
 #include <vector>
 #include <stack>
+#include <algorithm>
+#include <functional>
 
 using namespace std;
 
@@ -12,20 +14,18 @@ private:
     unordered_map<int, list<int>> adjacentList;
     bool isDirected;
 
-    bool dfsCycleDetection(int node, int parent, vector<bool>& visited, int& cycleCount) {
-        visited[node] = true;
-
-        for (int neighbor : adjacentList[node]) {
-            if (!visited[neighbor]) {
-                if (dfsCycleDetection(neighbor, node, visited, cycleCount)) {
-                    return true;
+    vector<vector<int>> getEdges() const {
+        vector<vector<int>> edges;
+        for (const auto& pair : adjacentList) {
+            int u = pair.first;
+            for (int v : pair.second) {
+                if (!isDirected && u > v) {
+                    continue;
                 }
-            } 
-            else if (neighbor != parent) {
-                cycleCount++;
+                edges.push_back({u, v});
             }
         }
-        return false;
+        return edges;
     }
 
 public:
@@ -88,18 +88,57 @@ public:
         }
     }
 
-    int countCycles() {
-        int cycleCount = 0;
-        vector<bool> visited(adjacentList.size(), false);
+    vector<vector<int>> findCycles() {
+        vector<vector<int>> edges = getEdges();
+        vector<vector<int>> cycles;
 
-        for (auto& pair : adjacentList) {
-            int node = pair.first;
-            if (!visited[node]) {
-                dfsCycleDetection(node, -1, visited, cycleCount);
+        auto rotateToSmallest = [](vector<int> path) {
+            if (path.empty()) return path;
+            auto minIt = min_element(path.begin(), path.end());
+            rotate(path.begin(), minIt, path.end());
+            return path;
+        };
+
+        auto invert = [rotateToSmallest](vector<int> path) {
+            reverse(path.begin(), path.end());
+            return rotateToSmallest(path);
+        };
+
+        auto isNew = [&cycles](const vector<int>& path) {
+            return find(cycles.begin(), cycles.end(), path) == cycles.end();
+        };
+
+        function<void(vector<int>, vector<vector<int>>&)> findNewCycles;
+
+        findNewCycles = [&](vector<int> path, vector<vector<int>>& graph) {
+            int startNode = path[0];
+            for (auto& edge : graph) {
+                int node1 = edge[0], node2 = edge[1];
+                if (startNode == node1 || startNode == node2) {
+                    int nextNode = (node1 == startNode) ? node2 : node1;
+                    auto it = find(path.begin(), path.end(), nextNode);
+                    if (it == path.end()) {
+                        vector<int> newPath = {nextNode};
+                        newPath.insert(newPath.end(), path.begin(), path.end());
+                        findNewCycles(newPath, graph);
+                    } else if (path.size() > 2 && nextNode == path.back()) {
+                        vector<int> p = rotateToSmallest(path);
+                        vector<int> inv = invert(p);
+                        if (isNew(p) && isNew(inv)) {
+                            cycles.push_back(p);
+                        }
+                    }
+                }
+            }
+        };
+
+        for (auto& edge : edges) {
+            for (int node : edge) {
+                findNewCycles({node}, edges);
             }
         }
 
-        return cycleCount / 2;
+        return cycles;
     }
 };
 
@@ -126,7 +165,16 @@ int main() {
     graph.dfs(0);
     cout << endl;
 
-    cout << "Number of cycles in the graph: " << graph.countCycles() << endl;
+    vector<vector<int>> cycles = graph.findCycles();
+    cout << "Number of cycles in the graph: " << cycles.size() << endl;
+    cout << "Cycles in the graph:" << endl;
+    for (const auto& cycle : cycles) {
+        for (size_t i = 0; i < cycle.size(); i++) {
+            cout << cycle[i];
+            if (i != cycle.size() - 1) cout << " ";
+        }
+        cout << endl;
+    }
 
     return 0;
 }
