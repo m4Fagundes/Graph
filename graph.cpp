@@ -103,7 +103,6 @@ public:
             reverse(path.begin(), path.end());
             return rotateToSmallest(path);
         };
-
         auto isNew = [&cycles](const vector<int>& path) {
             return find(cycles.begin(), cycles.end(), path) == cycles.end();
         };
@@ -123,8 +122,7 @@ public:
                         findNewCycles(newPath, graph);
                     } else if (path.size() > 2 && nextNode == path.back()) {
                         vector<int> p = rotateToSmallest(path);
-                        vector<int> inv = invert(p);
-                        if (isNew(p) && isNew(inv)) {
+                        if (isNew(p)) {
                             cycles.push_back(p);
                         }
                     }
@@ -140,22 +138,35 @@ public:
 
         return cycles;
     }
+
+    vector<vector<int>> findThreeVertexCycleCombinations() {
+        vector<vector<int>> cycles = findCycles();
+        vector<vector<int>> threeVertexCycles;
+        
+        for (const auto& cycle : cycles) {
+            if (cycle.size() == 3) {
+                threeVertexCycles.push_back(cycle);
+            }
+        }
+        
+        return threeVertexCycles;
+    }
 };
 
 int main() {
     Graph graph;
     graph.setUndirected();
 
-    graph.addEdge(0, 1); // A - B
-    graph.addEdge(0, 3); // A - D
-    graph.addEdge(0, 5); // A - F
-    graph.addEdge(1, 2); // B - C
-    graph.addEdge(1, 3); // B - D
-    graph.addEdge(1, 4); // B - E
-    graph.addEdge(2, 4); // C - E
-    graph.addEdge(2, 5); // C - F
-    graph.addEdge(2, 3); // C - D
-    graph.addEdge(3, 5); // D - F
+    graph.addEdge(0, 1);
+    graph.addEdge(0, 3);
+    graph.addEdge(0, 5);
+    graph.addEdge(1, 2);
+    graph.addEdge(1, 3);
+    graph.addEdge(1, 4);
+    graph.addEdge(2, 4);
+    graph.addEdge(2, 5);
+    graph.addEdge(2, 3);
+    graph.addEdge(3, 5);
 
     cout << "BFS starting from node 0: ";
     graph.bfs(0);
@@ -170,8 +181,16 @@ int main() {
     cout << "Cycles in the graph:" << endl;
     for (const auto& cycle : cycles) {
         for (size_t i = 0; i < cycle.size(); i++) {
-            cout << cycle[i];
-            if (i != cycle.size() - 1) cout << " ";
+            cout << cycle[i] << " ";
+        }
+        cout << endl;
+    }
+
+    vector<vector<int>> threeVertexCycles = graph.findThreeVertexCycleCombinations();
+    cout << "Three-vertex cycles:" << endl;
+    for (const auto& cycle : threeVertexCycles) {
+        for (int v : cycle) {
+            cout << v << " ";
         }
         cout << endl;
     }
