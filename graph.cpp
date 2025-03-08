@@ -29,9 +29,7 @@ private:
     }
 
 public:
-    Graph() {
-        isDirected = false;
-    }
+    Graph() : isDirected(false) {}
 
     void setUndirected() {
         isDirected = false;
@@ -47,7 +45,6 @@ public:
     void bfs(int start) {
         vector<bool> visited(adjacentList.size(), false);
         queue<int> q;
-
         q.push(start);
         visited[start] = true;
 
@@ -68,7 +65,6 @@ public:
     void dfs(int startVertex) {
         vector<bool> visited(adjacentList.size(), false);
         stack<int> stack;
-
         stack.push(startVertex);
 
         while (!stack.empty()) {
@@ -78,7 +74,6 @@ public:
             if (!visited[current]) {
                 cout << current << " ";
                 visited[current] = true;
-                
                 for (auto it = adjacentList[current].rbegin(); it != adjacentList[current].rend(); ++it) {
                     if (!visited[*it]) {
                         stack.push(*it);
@@ -92,17 +87,15 @@ public:
         vector<vector<int>> edges = getEdges();
         vector<vector<int>> cycles;
 
-        auto rotateToSmallest = [](vector<int> path) {
-            if (path.empty()) return path;
-            auto minIt = min_element(path.begin(), path.end());
-            rotate(path.begin(), minIt, path.end());
-            return path;
+        auto normalizeCycle = [](vector<int> cycle) {
+            if (cycle.empty()) return cycle;
+            auto minIt = min_element(cycle.begin(), cycle.end());
+            rotate(cycle.begin(), minIt, cycle.end());
+            vector<int> reversed = cycle;
+            reverse(reversed.begin() + 1, reversed.end());
+            return (reversed < cycle) ? reversed : cycle;
         };
 
-        auto invert = [rotateToSmallest](vector<int> path) {
-            reverse(path.begin(), path.end());
-            return rotateToSmallest(path);
-        };
         auto isNew = [&cycles](const vector<int>& path) {
             return find(cycles.begin(), cycles.end(), path) == cycles.end();
         };
@@ -113,7 +106,7 @@ public:
             int startNode = path[0];
             for (auto& edge : graph) {
                 int node1 = edge[0], node2 = edge[1];
-                if (startNode == node1 || startNode == node2) {
+                if (node1 == startNode || node2 == startNode) {
                     int nextNode = (node1 == startNode) ? node2 : node1;
                     auto it = find(path.begin(), path.end(), nextNode);
                     if (it == path.end()) {
@@ -121,9 +114,10 @@ public:
                         newPath.insert(newPath.end(), path.begin(), path.end());
                         findNewCycles(newPath, graph);
                     } else if (path.size() > 2 && nextNode == path.back()) {
-                        vector<int> p = rotateToSmallest(path);
-                        if (isNew(p)) {
-                            cycles.push_back(p);
+                        vector<int> cycle(path.begin(), path.end());
+                        cycle = normalizeCycle(cycle);
+                        if (isNew(cycle)) {
+                            cycles.push_back(cycle);
                         }
                     }
                 }
@@ -139,17 +133,17 @@ public:
         return cycles;
     }
 
-    vector<vector<int>> findThreeVertexCycleCombinations() {
+    vector<vector<int>> findVertexCycleCombinations(int quantity) {
         vector<vector<int>> cycles = findCycles();
-        vector<vector<int>> threeVertexCycles;
+        vector<vector<int>> vertexCycles;
         
         for (const auto& cycle : cycles) {
-            if (cycle.size() == 3) {
-                threeVertexCycles.push_back(cycle);
+            if (cycle.size() == quantity) {
+                vertexCycles.push_back(cycle);
             }
         }
         
-        return threeVertexCycles;
+        return vertexCycles;
     }
 };
 
@@ -181,19 +175,21 @@ int main() {
     cout << "Number of cycles in the graph: " << cycles.size() << endl;
     cout << "Cycles in the graph:" << endl;
     for (const auto& cycle : cycles) {
-        for (size_t i = 0; i < cycle.size(); i++) {
-            cout << cycle[i] << " ";
-        }
-        cout << endl;
-    }
-
-    vector<vector<int>> threeVertexCycles = graph.findThreeVertexCycleCombinations();
-    cout << "Three-vertex cycles:" << endl;
-    for (const auto& cycle : threeVertexCycles) {
         for (int v : cycle) {
             cout << v << " ";
         }
         cout << endl;
+    }
+
+    for (int size = 3; size <= 6; ++size) {
+        vector<vector<int>> vertexCycles = graph.findVertexCycleCombinations(size);
+        cout << size << "-vertex cycles:" << endl;
+        for (const auto& cycle : vertexCycles) {
+            for (int v : cycle) {
+                cout << v << " ";
+            }
+            cout << endl;
+        }
     }
 
     return 0;
